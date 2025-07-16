@@ -1,10 +1,11 @@
 package com.shipping.packagingapi.config;
 
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.jdbc.DatabaseDriver;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import com.zaxxer.hikari.HikariDataSource;
 
 import javax.sql.DataSource;
 
@@ -13,15 +14,29 @@ import javax.sql.DataSource;
 public class DataSourceConfig {
 
     /**
-     * This bean correctly configures the DataSource for a cloud environment like Render
-     * that provides a single DATABASE_URL environment variable.
-     * It parses the URL and sets the JDBC URL, username, and password correctly.
+     * This bean is used to load the standard spring.datasource.* properties
+     * which we will then override for production.
+     */
+    @Bean
+    @ConfigurationProperties("spring.datasource")
+    public DataSourceProperties dataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    /**
+     * This bean correctly configures the DataSource for a cloud environment like Render.
+     * It reads the DATABASE_URL environment variable and explicitly sets the driver class,
+     * ensuring Spring Boot knows it's a PostgreSQL database.
      */
     @Bean
     public DataSource dataSource(DataSourceProperties properties) {
         String databaseUrl = System.getenv("DATABASE_URL");
-        return properties.initializeDataSourceBuilder()
-                .url(databaseUrl)
-                .build();
+        HikariDataSource dataSource = properties.initializeDataSourceBuilder()
+                .type(HikariDataSource.class).build();
+
+        dataSource.setJdbcUrl(databaseUrl);
+        dataSource.setDriverClassName("org.postgresql.Driver");
+
+        return dataSource;
     }
 }
