@@ -130,7 +130,6 @@ Here is a summary of the available API endpoints:
       "price": 10.0,
       "weight": 200
     },
-    ...
   ]
   
 ### Place an Order
